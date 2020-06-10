@@ -9,8 +9,8 @@ from random import random
 from NLinkArm import NLinkArm
 
 # Simulation parameters
-Kp = 2
-dt = 0.1
+Kp = 0.5
+dt = 0.01
 N_LINKS = 2
 N_ITERATIONS = 10000
 
@@ -19,9 +19,12 @@ WAIT_FOR_NEW_GOAL = 1
 MOVING_TO_GOAL = 2
 
 show_animation = True
+use_random_goal = False
+goals = [[1.31, 1.1], [1.32, 1.1], [1.33, 1.05]] # examples if not using random goals
+num_examples = 3
 
 
-def main():  # pragma: no cover
+def main():  # pragma: no cover # doesn't get called. look at end
     """
     Creates an arm using the NLinkArm class and uses its inverse kinematics
     to move it to the desired position.
@@ -84,17 +87,13 @@ def get_random_goal():
 def animation():
     link_lengths = [1] * N_LINKS
     joint_angles = np.array([0] * N_LINKS)
-    goal_pos = get_random_goal()
+    goal_pos = get_random_goal() if use_random_goal else goals[0]
     arm = NLinkArm(link_lengths, joint_angles, goal_pos, show_animation)
     state = WAIT_FOR_NEW_GOAL
     solution_found = False
     
-    num_examples = 3
-    use_random_goal = True
-    goals = [[1.7, 0.5], [1.2, 1.0], [1.0, 1.0]]
-    
-    trajectory, trajectories = [], []
-     
+    trajectory, trajectories = [joint_angles], []
+    time, c_time, all_times = 0.0, [0.0], [] 
     i_goal = 0
     while True:
         old_goal = np.array(goal_pos)
@@ -112,6 +111,8 @@ def animation():
                     print("Solution could not be found.")
                     state = WAIT_FOR_NEW_GOAL
                     arm.goal = get_random_goal() if use_random_goal else goals[i_goal]
+                    print(arm.goal)
+                    print(get_random_goal())
                 elif solution_found:
                     state = MOVING_TO_GOAL
         elif state is MOVING_TO_GOAL:
@@ -119,25 +120,26 @@ def animation():
                 joint_angles = joint_angles + Kp * \
                     ang_diff(joint_goal_angles, joint_angles) * dt
                 trajectory.append(joint_angles)
+                time += dt
+                c_time.append(time)
             else:
+                joint_angles = np.array([0] * N_LINKS)
                 state = WAIT_FOR_NEW_GOAL
                 solution_found = False
-                i_goal += 1
-                arm.goal = get_random_goal() if use_random_goal else goals[i_goal]
                 trajectories.append(np.array(trajectory))
-                trajectory = []
-
-        if i_goal >= num_examples:
-            break
-
+                all_times.append(np.array(c_time))
+                time = 0.0
+                trajectory, c_time = [joint_angles], [time]
+                i_goal += 1
+                if i_goal >= num_examples:
+                    break
+                arm.goal = get_random_goal() if use_random_goal else goals[i_goal]
+        
         arm.update_joints(joint_angles)
-    
-    
-
     for idx, traj in enumerate(trajectories):
-        np.savetxt('trajectories/traj-%d.csv' % idx, traj, delimiter=',')
+        data = np.concatenate((all_times[idx].reshape(-1, 1), traj), axis=1)
+        np.savetxt('trajectories/traj-%d.csv' % idx, data, delimiter=',')
 
-    print(trajectories[0])
 
 def forward_kinematics(link_lengths, joint_angles):
     x = y = 0
