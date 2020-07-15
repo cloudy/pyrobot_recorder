@@ -141,6 +141,15 @@ def animation():
         np.savetxt('trajectories/traj-%d.csv' % idx, data, delimiter=',')
 
 
+def playback(traj):
+    link_lengths = [1] * (traj.shape[1] - 1)
+    joint_angles = traj[0, 1:]
+    goal_pos = forward_kinematics(link_lengths, traj[-1, 1:])
+    arm = NLinkArm(link_lengths, joint_angles, goal_pos, show_animation)
+    for q in traj:
+        arm.update_joints(q[1:])
+
+
 def forward_kinematics(link_lengths, joint_angles):
     x = y = 0
     for i in range(1, N_LINKS + 1):

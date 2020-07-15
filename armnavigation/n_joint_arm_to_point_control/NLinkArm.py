@@ -6,21 +6,29 @@ Author: Daniel Ingram
 
 import numpy as np
 import matplotlib.pyplot as plt
-
+import os
+import time
 
 class NLinkArm(object):
-    def __init__(self, link_lengths, joint_angles, goal, show_animation):
+    def __init__(self, link_lengths, joint_angles, goal, show_animation, save_dir=''):
         self.show_animation = show_animation
         self.n_links = len(link_lengths)
         if self.n_links != len(joint_angles):
             raise ValueError()
 
+        self.plot_count = 0
         self.link_lengths = np.array(link_lengths)
         self.joint_angles = np.array(joint_angles)
         self.points = [[0, 0] for _ in range(self.n_links + 1)]
-
+        self.id = time.strftime("%Y%m%d-%H%M%S")
+        self.save_dir = save_dir
         self.lim = sum(link_lengths)
         self.goal = np.array(goal).T
+        try:
+            os.mkdir(self.save_dir + self.id)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
 
         if show_animation:  # pragma: no cover
             self.fig = plt.figure()
@@ -69,7 +77,9 @@ class NLinkArm(object):
         plt.xlim([-self.lim, self.lim])
         plt.ylim([-self.lim, self.lim])
         plt.draw()
+        plt.savefig(self.save_dir + self.id + '/plot-%05d.png' % self.plot_count)
         plt.pause(0.0001)
+        self.plot_count += 1
 
     def click(self, event):
         self.goal = np.array([event.xdata, event.ydata]).T
