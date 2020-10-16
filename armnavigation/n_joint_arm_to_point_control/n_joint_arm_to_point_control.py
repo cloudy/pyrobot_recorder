@@ -6,6 +6,10 @@ Author: Daniel Ingram (daniel-s-ingram)
 """
 import numpy as np
 from random import random
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from NLinkArm import NLinkArm
 
 # Simulation parameters
@@ -13,6 +17,8 @@ Kp = 0.5
 dt = 0.01
 N_LINKS = 2
 N_ITERATIONS = 10000
+LINK_LENGTHS = [2, 1][:N_LINKS]
+JOINT_ANGLES = np.zeros(N_LINKS)
 
 # States
 WAIT_FOR_NEW_GOAL = 1
@@ -29,8 +35,8 @@ def main():  # pragma: no cover # doesn't get called. look at end
     Creates an arm using the NLinkArm class and uses its inverse kinematics
     to move it to the desired position.
     """
-    link_lengths = [1] * N_LINKS
-    joint_angles = np.array([0] * N_LINKS)
+    link_lengths = LINK_LENGTHS
+    joint_angles = JOINT_ANGLES
     goal_pos = [N_LINKS, 0]
     arm = NLinkArm(link_lengths, joint_angles, goal_pos, show_animation)
     state = WAIT_FOR_NEW_GOAL
@@ -85,8 +91,8 @@ def get_random_goal():
 
 
 def animation():
-    link_lengths = [1] * N_LINKS
-    joint_angles = np.array([0] * N_LINKS)
+    link_lengths = LINK_LENGTHS
+    joint_angles = JOINT_ANGLES
     goal_pos = get_random_goal() if use_random_goal else goals[0]
     arm = NLinkArm(link_lengths, joint_angles, goal_pos, show_animation)
     state = WAIT_FOR_NEW_GOAL
@@ -142,7 +148,7 @@ def animation():
 
 
 def playback(traj):
-    link_lengths = [1] * (traj.shape[1] - 1)
+    link_lengths = LINK_LENGTHS
     joint_angles = traj[0, 1:]
     goal_pos = forward_kinematics(link_lengths, traj[-1, 1:])
     arm = NLinkArm(link_lengths, joint_angles, goal_pos, show_animation)
