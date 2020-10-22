@@ -17,18 +17,21 @@ obstacles = [[1.75, 0.75, 0.6], [0.55, 1.5, 0.5], [0, -1, 0.25]]
 
 def main():
     arm = NLinkArm([1, 1], [0, 0])
-    start = (10, 50)
+    start = (30, 60)
     goal = (58, 56)
     grid = get_occupancy_grid(arm, obstacles)
     plt.imshow(grid)
     plt.show()
     route = astar_torus(grid, start, goal)
+    thetas = []
     for node in route:
         theta1 = 2 * pi * node[0] / M - pi
         theta2 = 2 * pi * node[1] / M - pi
+        thetas.append([theta1, theta2])
         arm.update_joints([theta1, theta2])
         arm.plot(obstacles=obstacles)
 
+    np.savetxt('theta_traj.txt', thetas, delimiter=',')
 
 def detect_collision(line_seg, circle):
     """

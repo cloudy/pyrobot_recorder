@@ -1,3 +1,9 @@
+screenshots/*
+!screenshots/.gitkeep
+trajectories/*
+!trajectories/.gitkeep
+
+*.pyc
 *.csv
 *.gif
 *.g2o

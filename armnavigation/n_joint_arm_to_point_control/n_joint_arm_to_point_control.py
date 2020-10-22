@@ -7,9 +7,10 @@ Author: Daniel Ingram (daniel-s-ingram)
 import numpy as np
 from random import random
 import os
+import time
+
 import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 from NLinkArm import NLinkArm
 
 # Simulation parameters
@@ -17,17 +18,23 @@ Kp = 0.5
 dt = 0.01
 N_LINKS = 2
 N_ITERATIONS = 10000
-LINK_LENGTHS = [2, 1][:N_LINKS]
+LINK_LENGTHS = [1.3, 1][:N_LINKS]
 JOINT_ANGLES = np.zeros(N_LINKS)
 
 # States
 WAIT_FOR_NEW_GOAL = 1
 MOVING_TO_GOAL = 2
 
+save_id = time.strftime("%Y%m%d-%H%M%S")
+save_screenshots_dir = None # set to None to not save, set to string for dir
+save_trajectories = True
 show_animation = True
 use_random_goal = False
 goals = [[1.31, 1.1], [1.32, 1.1], [1.33, 1.05]] # examples if not using random goals
 num_examples = 3
+
+obstacles = [[1.75, 0.75, 0.6], [0.55, 1.5, 0.5], [0, -1, 0.7]]
+
 
 
 def main():  # pragma: no cover # doesn't get called. look at end
@@ -38,7 +45,7 @@ def main():  # pragma: no cover # doesn't get called. look at end
     link_lengths = LINK_LENGTHS
     joint_angles = JOINT_ANGLES
     goal_pos = [N_LINKS, 0]
-    arm = NLinkArm(link_lengths, joint_angles, goal_pos, show_animation)
+    arm = NLinkArm(link_lengths, joint_angles, goal_pos, show_animation, save_id, save_screenshots_dir)
     state = WAIT_FOR_NEW_GOAL
     solution_found = False
     while True:
@@ -94,7 +101,7 @@ def animation():
     link_lengths = LINK_LENGTHS
     joint_angles = JOINT_ANGLES
     goal_pos = get_random_goal() if use_random_goal else goals[0]
-    arm = NLinkArm(link_lengths, joint_angles, goal_pos, show_animation)
+    arm = NLinkArm(link_lengths, joint_angles, goal_pos, show_animation, save_id, save_screenshots_dir)
     state = WAIT_FOR_NEW_GOAL
     solution_found = False
     
@@ -142,16 +149,22 @@ def animation():
                 arm.goal = get_random_goal() if use_random_goal else goals[i_goal]
         
         arm.update_joints(joint_angles)
-    for idx, traj in enumerate(trajectories):
-        data = np.concatenate((all_times[idx].reshape(-1, 1), traj), axis=1)
-        np.savetxt('trajectories/traj-%d.csv' % idx, data, delimiter=',')
+    if save_trajectories == True:
+        try:
+            os.mkdir('trajectories/' + save_id)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+        for idx, traj in enumerate(trajectories):
+            data = np.concatenate((all_times[idx].reshape(-1, 1), traj), axis=1)
+            np.savetxt('trajectories/'+ save_id + '/traj-%d.csv' % idx, data, delimiter=',')
 
 
 def playback(traj):
     link_lengths = LINK_LENGTHS
     joint_angles = traj[0, 1:]
     goal_pos = forward_kinematics(link_lengths, traj[-1, 1:])
-    arm = NLinkArm(link_lengths, joint_angles, goal_pos, show_animation)
+    arm = NLinkArm(link_lengths, joint_angles, goal_pos, show_animation, save_id, save_screenshots_dir)
     for q in traj:
         arm.update_joints(q[1:])
 
